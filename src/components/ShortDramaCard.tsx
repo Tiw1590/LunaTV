@@ -237,8 +237,8 @@ function ShortDramaCard({
 
   // 处理点击事件（跳转到播放页面）
   const handleClick = useCallback(() => {
-    router.push(`/play?title=${encodeURIComponent(drama.name)}&shortdrama_id=${drama.id}`);
-  }, [router, drama.name, drama.id]);
+    window.location.assign(`/play?title=${encodeURIComponent(drama.name)}&shortdrama_id=${drama.id}`);
+  }, [drama.name, drama.id]);
 
   // 处理播放（在操作面板中使用）
   const handlePlay = useCallback(() => {

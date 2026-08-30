@@ -18,7 +18,6 @@ const DEFAULT_WARMUP_ROUTES = [
   '/douban?type=tv',
   '/shortdrama',
   '/live',
-  '/source-browser',
 ];
 
 const warmedRoutes = new Set<string>();

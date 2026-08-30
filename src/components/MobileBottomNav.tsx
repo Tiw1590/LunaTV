@@ -54,14 +54,6 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
       hoverBg: 'hover:bg-violet-500/20',
     },
     {
-      icon: Globe,
-      label: '源浏览',
-      href: '/source-browser',
-      activeGradient: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-      activeTextColor: 'text-white',
-      hoverBg: 'hover:bg-blue-500/20',
-    },
-    {
       icon: Film,
       label: '电影',
       href: '/douban?type=movie',
@@ -145,10 +137,6 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
 
       // 首页特殊处理
       if (href === '/' && decodedActive === '/') return true;
-
-      // 源浏览特殊处理
-      if (href === '/source-browser' && decodedActive.startsWith('/source-browser'))
-        return true;
 
       // 短剧特殊处理
       if (href === '/shortdrama' && decodedActive.startsWith('/shortdrama'))
