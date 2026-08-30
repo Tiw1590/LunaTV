@@ -1055,53 +1055,50 @@ function SearchPageClient() {
       <div className='overflow-visible mb-10 -mt-6 md:mt-0 pb-40 md:pb-safe-bottom'>
         {/* 搜索框区域 - 美化版 */}
         <div className='mb-8'>
-          {/* 搜索类型选项卡 - 移动优先响应式设计 */}
-          <div className='max-w-3xl mx-auto mb-6 px-3 sm:px-0'>
-            {/* 移动端：可滚动横向布局；桌面端：居中排列 */}
-            <div className='overflow-x-auto scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0'>
-              <div className='inline-flex sm:flex items-center justify-start sm:justify-center min-w-full sm:min-w-0 bg-gradient-to-r from-gray-100 via-white to-gray-100 dark:from-gray-800/95 dark:via-gray-750/95 dark:to-gray-800/95 rounded-2xl p-2 gap-2 sm:gap-2.5 shadow-xl border-2 border-gray-200/70 dark:border-gray-600/70 backdrop-blur-md'>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setSearchType('video');
-                    setTmdbActorResults(null);
-                    setTmdbActorError(null);
-                    // 如果有搜索词且当前显示结果，触发影视搜索
-                    const currentQuery = searchQuery.trim() || searchParams?.get('q');
-                    if (currentQuery && showResults) {
-                      router.push(`/search?q=${encodeURIComponent(currentQuery)}`);
-                    }
-                  }}
-                  className={`flex-shrink-0 px-4 sm:px-6 py-3 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 whitespace-nowrap min-w-[110px] sm:min-w-0 ${
-                    searchType === 'video'
-                      ? 'bg-gradient-to-br from-green-400 via-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50 scale-105 ring-2 ring-green-400/60 dark:ring-green-500/80'
-                      : 'bg-gray-200/60 dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 border-2 border-gray-300/50 dark:border-gray-600/50 shadow-md hover:bg-gray-300/80 dark:hover:bg-gray-600/90 hover:scale-105 hover:shadow-lg active:scale-100'
-                  }`}
-                >
-                  🎬 影视资源
-                </button>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setSearchType('tmdb-actor');
-                    // 清除之前的搜索状态
-                    setTmdbActorError(null);
-                    setTmdbActorResults(null);
-                    // 如果当前有搜索词，立即触发TMDB演员搜索
-                    const currentQuery = searchQuery.trim() || searchParams?.get('q');
-                    if (currentQuery && showResults) {
-                      handleTmdbActorSearch(currentQuery, tmdbActorType, tmdbFilterState);
-                    }
-                  }}
-                  className={`flex-shrink-0 px-4 sm:px-6 py-3 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 whitespace-nowrap min-w-[110px] sm:min-w-0 ${
-                    searchType === 'tmdb-actor'
-                      ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/50 scale-105 ring-2 ring-purple-400/60 dark:ring-purple-500/80'
-                      : 'bg-gray-200/60 dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 border-2 border-gray-300/50 dark:border-gray-600/50 shadow-md hover:bg-gray-300/80 dark:hover:bg-gray-600/90 hover:scale-105 hover:shadow-lg active:scale-100'
-                  }`}
-                >
-                  🎭 TMDB演员
-                </button>
-              </div>
+          {/* 搜索类型选项卡 - 紧凑自适应胶囊设计 */}
+          <div className='flex justify-center mb-6 px-3'>
+            <div className='inline-flex items-center bg-gradient-to-r from-gray-100 via-white to-gray-100 dark:from-gray-800/95 dark:via-gray-750/95 dark:to-gray-800/95 rounded-2xl p-1.5 gap-2 sm:gap-3 shadow-xl border-2 border-gray-200/70 dark:border-gray-600/70 backdrop-blur-md'>
+              <button
+                type='button'
+                onClick={() => {
+                  setSearchType('video');
+                  setTmdbActorResults(null);
+                  setTmdbActorError(null);
+                  // 如果有搜索词且当前显示结果，触发影视搜索
+                  const currentQuery = searchQuery.trim() || searchParams?.get('q');
+                  if (currentQuery && showResults) {
+                    router.push(`/search?q=${encodeURIComponent(currentQuery)}`);
+                  }
+                }}
+                className={`flex-shrink-0 px-5 py-2.5 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 whitespace-nowrap ${
+                  searchType === 'video'
+                    ? 'bg-gradient-to-br from-green-400 via-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50 scale-105 ring-2 ring-green-400/60 dark:ring-green-500/80'
+                    : 'bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-700/70 hover:scale-105 active:scale-100'
+                }`}
+              >
+                🎬 影视资源
+              </button>
+              <button
+                type='button'
+                onClick={() => {
+                  setSearchType('tmdb-actor');
+                  // 清除之前的搜索状态
+                  setTmdbActorError(null);
+                  setTmdbActorResults(null);
+                  // 如果当前有搜索词，立即触发TMDB演员搜索
+                  const currentQuery = searchQuery.trim() || searchParams?.get('q');
+                  if (currentQuery && showResults) {
+                    handleTmdbActorSearch(currentQuery, tmdbActorType, tmdbFilterState);
+                  }
+                }}
+                className={`flex-shrink-0 px-5 py-2.5 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 whitespace-nowrap ${
+                  searchType === 'tmdb-actor'
+                    ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/50 scale-105 ring-2 ring-purple-400/60 dark:ring-purple-500/80'
+                    : 'bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-700/70 hover:scale-105 active:scale-100'
+                }`}
+              >
+                🎭 TMDB演员
+              </button>
             </div>
           </div>
 
