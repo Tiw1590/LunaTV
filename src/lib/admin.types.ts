@@ -28,9 +28,6 @@ export interface AdminConfig {
     // Bangumi 图片代理
     BangumiImageProxyType?: string;
     BangumiImageProxy?: string;
-    // 自定义去广告代码
-    CustomAdFilterCode?: string;
-    CustomAdFilterVersion?: number;
     // 默认用户组
     DefaultUserTags?: string[];
   };

@@ -70,7 +70,6 @@ import BilibiliConfig from '@/components/BilibiliConfig';
 // import ShortDramaConfig from '@/components/ShortDramaConfig'; // 暂时隐藏短剧API配置
 import DownloadConfig from '@/components/OfflineDownloadConfig';
 import EmbyConfig from '@/components/EmbyConfig';
-import CustomAdFilterConfig from '@/components/CustomAdFilterConfig';
 import WatchRoomConfig from '@/components/WatchRoomConfig';
 import HomePageConfig from '@/components/HomePageConfig';
 import PerformanceMonitor from '@/components/admin/PerformanceMonitor';
@@ -7975,7 +7974,6 @@ function AdminPageClient() {
     shortDramaConfig: false,
     embyConfig: false,
     downloadConfig: false,
-    customAdFilter: false,
     watchRoomConfig: false,
     tvboxSecurityConfig: false,
     trustedNetworkConfig: false,
@@ -8335,21 +8333,6 @@ function AdminPageClient() {
               onToggle={() => toggleTab('downloadConfig')}
             >
               <DownloadConfig config={config} refreshConfig={fetchConfig} />
-            </CollapsibleTab>
-
-            {/* 自定义去广告标签 */}
-            <CollapsibleTab
-              title='自定义去广告'
-              icon={
-                <Video
-                  size={20}
-                  className='text-purple-600 dark:text-purple-400'
-                />
-              }
-              isExpanded={expandedTabs.customAdFilter}
-              onToggle={() => toggleTab('customAdFilter')}
-            >
-              <CustomAdFilterConfig config={config} refreshConfig={fetchConfig} />
             </CollapsibleTab>
 
             {/* 观影室配置标签 */}

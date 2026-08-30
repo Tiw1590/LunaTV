@@ -21,7 +21,6 @@ import EpisodeSelector from '@/components/EpisodeSelector';
 import NetDiskSearchResults from '@/components/NetDiskSearchResults';
 import AcgSearch from '@/components/AcgSearch';
 import PageLayout from '@/components/PageLayout';
-import SkipController, { SkipSettingsButton } from '@/components/SkipController';
 import VideoCard from '@/components/VideoCard';
 import CommentSection from '@/components/play/CommentSection';
 import DownloadButtons from '@/components/play/DownloadButtons';
@@ -278,8 +277,7 @@ function PlayPageClient() {
   const [celebrityWorks, setCelebrityWorks] = useState<any[]>([]);
   const [loadingCelebrityWorks, setLoadingCelebrityWorks] = useState(false);
 
-  // SkipController 相关状态
-  const [isSkipSettingOpen, setIsSkipSettingOpen] = useState(false);
+  // 播放时间状态
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
 
@@ -311,22 +309,6 @@ function PlayPageClient() {
   
   // resize事件防抖管理
   const resizeResetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 去广告开关（从 localStorage 继承，默认 true）
-  const [blockAdEnabled, setBlockAdEnabled] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const v = localStorage.getItem('enable_blockad');
-      if (v !== null) return v === 'true';
-    }
-    return true;
-  });
-  const blockAdEnabledRef = useRef(blockAdEnabled);
-
-  // 自定义去广告代码
-  const [customAdFilterCode, setCustomAdFilterCode] = useState<string>('');
-  const [customAdFilterVersion, setCustomAdFilterVersion] = useState<number>(1);
-  const customAdFilterCodeRef = useRef(customAdFilterCode);
-
 
   // WebSR超分相关状态
   const [webGPUSupported, setWebGPUSupported] = useState<boolean>(false);
@@ -661,8 +643,6 @@ function PlayPageClient() {
 
   // ✅ 合并所有 ref 同步的 useEffect - 减少不必要的渲染
   useEffect(() => {
-    blockAdEnabledRef.current = blockAdEnabled;
-    customAdFilterCodeRef.current = customAdFilterCode;
     externalDanmuEnabledRef.current = externalDanmuEnabled;
     needPreferRef.current = needPrefer;
     currentSourceRef.current = currentSource;
@@ -676,8 +656,6 @@ function PlayPageClient() {
     audioTracksRef.current = audioTracks;
     currentAudioTrackRef.current = currentAudioTrack;
   }, [
-    blockAdEnabled,
-    customAdFilterCode,
     externalDanmuEnabled,
     needPrefer,
     currentSource,
@@ -732,61 +710,6 @@ function PlayPageClient() {
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
-  }, []);
-
-  // 获取自定义去广告代码
-  useEffect(() => {
-    const fetchAdFilterCode = async () => {
-      try {
-        // 从缓存读取去广告代码和版本号
-        const cachedCode = localStorage.getItem('customAdFilterCode');
-        const cachedVersion = localStorage.getItem('customAdFilterVersion');
-
-        if (cachedCode && cachedVersion) {
-          setCustomAdFilterCode(cachedCode);
-          setCustomAdFilterVersion(parseInt(cachedVersion));
-          console.log('使用缓存的去广告代码');
-        }
-
-        // 从 window.RUNTIME_CONFIG 获取版本号
-        const version = (window as any).RUNTIME_CONFIG?.CUSTOM_AD_FILTER_VERSION || 0;
-
-        // 如果版本号为 0，说明去广告未设置，清空缓存并跳过
-        if (version === 0) {
-          localStorage.removeItem('customAdFilterCode');
-          localStorage.removeItem('customAdFilterVersion');
-          setCustomAdFilterCode('');
-          setCustomAdFilterVersion(0);
-          return;
-        }
-
-        // 如果缓存版本号与服务器版本号不一致，获取最新代码
-        if (!cachedVersion || parseInt(cachedVersion) !== version) {
-          console.log('检测到去广告代码更新（版本 ' + version + '），获取最新代码');
-
-          // 获取完整代码
-          const fullResponse = await fetch('/api/ad-filter?full=true');
-          if (!fullResponse.ok) {
-            console.warn('获取完整去广告代码失败，使用缓存');
-            return;
-          }
-
-          const { code, version: newVersion } = await fullResponse.json();
-
-          // 更新缓存和状态
-          localStorage.setItem('customAdFilterCode', code || '');
-          localStorage.setItem('customAdFilterVersion', String(newVersion || 0));
-          setCustomAdFilterCode(code || '');
-          setCustomAdFilterVersion(newVersion || 0);
-
-          console.log('去广告代码已更新到版本 ' + newVersion);
-        }
-      } catch (error) {
-        console.error('获取自定义去广告代码失败:', error);
-      }
-    };
-
-    fetchAdFilterCode();
   }, []);
 
   // WebGPU支持检测
@@ -995,7 +918,6 @@ function PlayPageClient() {
   const episodeSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSourceChangingRef = useRef<boolean>(false); // 标记是否正在换源
   const isEpisodeChangingRef = useRef<boolean>(false); // 标记是否正在切换集数
-  const isSkipControllerTriggeredRef = useRef<boolean>(false); // 标记是否通过 SkipController 触发了下一集
   const videoEndedHandledRef = useRef<boolean>(false); // 🔥 标记当前视频的 video:ended 事件是否已经被处理过（防止多个监听器重复触发）
 
   // 🚀 新增：连续切换源防抖和资源管理
@@ -2693,87 +2615,6 @@ function PlayPageClient() {
     }
   };
 
-  // 去广告相关函数
-  function filterAdsFromM3U8(m3u8Content: string): string {
-    if (!m3u8Content) return '';
-
-    // 如果有自定义去广告代码，优先使用
-    const customCode = customAdFilterCodeRef.current;
-    if (customCode && customCode.trim()) {
-      try {
-        // 移除 TypeScript 类型注解,转换为纯 JavaScript
-        const jsCode = customCode
-          .replace(/(\w+)\s*:\s*(string|number|boolean|any|void|never|unknown|object)\s*([,)])/g, '$1$3')
-          .replace(/\)\s*:\s*(string|number|boolean|any|void|never|unknown|object)\s*\{/g, ') {')
-          .replace(/(const|let|var)\s+(\w+)\s*:\s*(string|number|boolean|any|void|never|unknown|object)\s*=/g, '$1 $2 =');
-
-        // 创建并执行自定义函数
-        // eslint-disable-next-line no-new-func
-        const customFunction = new Function('type', 'm3u8Content',
-          jsCode + '\nreturn filterAdsFromM3U8(type, m3u8Content);'
-        );
-        const result = customFunction(currentSourceRef.current, m3u8Content);
-        console.log('✅ 使用自定义去广告代码');
-        return result;
-      } catch (err) {
-        console.error('执行自定义去广告代码失败,降级使用默认规则:', err);
-        // 继续使用默认规则
-      }
-    }
-
-    // 默认去广告规则
-    if (!m3u8Content) return '';
-
-    // 广告关键字列表
-    const adKeywords = [
-      'sponsor',
-      '/ad/',
-      '/ads/',
-      'advert',
-      'advertisement',
-      '/adjump',
-      'redtraffic'
-    ];
-
-    // 按行分割M3U8内容
-    const lines = m3u8Content.split('\n');
-    const filteredLines = [];
-
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i];
-
-      // 跳过 #EXT-X-DISCONTINUITY 标识
-      if (line.includes('#EXT-X-DISCONTINUITY')) {
-        i++;
-        continue;
-      }
-
-      // 如果是 EXTINF 行，检查下一行 URL 是否包含广告关键字
-      if (line.includes('#EXTINF:')) {
-        // 检查下一行 URL 是否包含广告关键字
-        if (i + 1 < lines.length) {
-          const nextLine = lines[i + 1];
-          const containsAdKeyword = adKeywords.some(keyword =>
-            nextLine.toLowerCase().includes(keyword.toLowerCase())
-          );
-
-          if (containsAdKeyword) {
-            // 跳过 EXTINF 行和 URL 行
-            i += 2;
-            continue;
-          }
-        }
-      }
-
-      // 保留当前行
-      filteredLines.push(line);
-      i++;
-    }
-
-    return filteredLines.join('\n');
-  }
-
   const formatTime = (seconds: number): string => {
     if (seconds === 0) return '00:00';
 
@@ -2794,48 +2635,11 @@ function PlayPageClient() {
     }
   };
 
-  class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
-    constructor(config: any) {
-      super(config);
-      const load = this.load.bind(this);
-      this.load = function (context: any, config: any, callbacks: any) {
-        // 拦截manifest和level请求
-        if (
-          (context as any).type === 'manifest' ||
-          (context as any).type === 'level'
-        ) {
-          const onSuccess = callbacks.onSuccess;
-          callbacks.onSuccess = function (
-            response: any,
-            stats: any,
-            context: any
-          ) {
-            // 如果是m3u8文件，处理内容以移除广告分段
-            if (response.data && typeof response.data === 'string') {
-              // 过滤掉广告段 - 实现更精确的广告过滤逻辑
-              response.data = filterAdsFromM3U8(response.data);
-            }
-            return onSuccess(response, stats, context, null);
-          };
-        }
-        // 执行原始load方法
-        load(context, config, callbacks);
-      };
-    }
-  }
-
-
   // 🚀 优化的集数变化处理（防抖 + 状态保护）
   useEffect(() => {
     // 🔥 标记正在切换集数（只在非换源时）
     if (!isSourceChangingRef.current) {
       isEpisodeChangingRef.current = true;
-      // 🔥 关键修复：延迟重置 SkipController 触发标志，避免新集数立即触发跳过
-      // 给 SkipController 的冷却时间（3秒）足够的时间来防止重复触发
-      setTimeout(() => {
-        isSkipControllerTriggeredRef.current = false;
-        console.log('✅ 延迟重置自动跳过标志，允许新集数自动跳过片头片尾');
-      }, 3500); // 比 SkipController 的冷却时间（3000ms）稍长
       videoEndedHandledRef.current = false;
       console.log('🔄 开始切换集数');
     }
@@ -3703,15 +3507,9 @@ function PlayPageClient() {
     const d = detailRef.current;
     const idx = currentEpisodeIndexRef.current;
     if (d && d.episodes && idx < d.episodes.length - 1) {
-      // 🔥 关键修复：通过 SkipController 自动跳下一集时，不保存播放进度
-      // 因为此时的播放位置是片尾，用户并没有真正看到这个位置
-      // 如果保存了片尾的进度，下次"继续观看"会从片尾开始，导致进度错误
-      // if (artPlayerRef.current && !artPlayerRef.current.paused) {
-      //   saveCurrentPlayProgress();
-      // }
-
-      // 🔑 标记通过 SkipController 触发了下一集
-      isSkipControllerTriggeredRef.current = true;
+      if (artPlayerRef.current && !artPlayerRef.current.paused) {
+        saveCurrentPlayProgress();
+      }
       setCurrentEpisodeIndex(idx + 1);
     }
   };
@@ -4522,11 +4320,6 @@ function PlayPageClient() {
                   },
                 },
               },
-
-              /* 自定义loader */
-              loader: blockAdEnabledRef.current
-                ? CustomHlsJsLoader
-                : Hls.DefaultConfig.loader,
             });
 
             hls.loadSource(url);
@@ -4698,29 +4491,6 @@ function PlayPageClient() {
             '<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDUwIDUwIj48cGF0aCBkPSJNMjUuMjUxIDYuNDYxYy0xMC4zMTggMC0xOC42ODMgOC4zNjUtMTguNjgzIDE4LjY4M2g0LjA2OGMwLTguMDcgNi41NDUtMTQuNjE1IDE0LjYxNS0xNC42MTVWNi40NjF6IiBmaWxsPSIjMDA5Njg4Ij48YW5pbWF0ZVRyYW5zZm9ybSBhdHRyaWJ1dGVOYW1lPSJ0cmFuc2Zvcm0iIGF0dHJpYnV0ZVR5cGU9IlhNTCIgZHVyPSIxcyIgZnJvbT0iMCAyNSAyNSIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiIHRvPSIzNjAgMjUgMjUiIHR5cGU9InJvdGF0ZSIvPjwvcGF0aD48L3N2Zz4=">',
         },
         settings: [
-          {
-            html: '去广告',
-            icon: '<text x="50%" y="50%" font-size="20" font-weight="bold" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">AD</text>',
-            tooltip: blockAdEnabled ? '已开启' : '已关闭',
-            onClick() {
-              const newVal = !blockAdEnabled;
-              try {
-                localStorage.setItem('enable_blockad', String(newVal));
-                if (artPlayerRef.current) {
-                  resumeTimeRef.current = artPlayerRef.current.currentTime;
-                  if (artPlayerRef.current.video.hls) {
-                    artPlayerRef.current.video.hls.destroy();
-                  }
-                  artPlayerRef.current.destroy(false);
-                  artPlayerRef.current = null;
-                }
-                setBlockAdEnabled(newVal);
-              } catch (_) {
-                // ignore
-              }
-              return newVal ? '当前开启' : '当前关闭';
-            },
-          },
           {
             name: '外部弹幕',
             html: '外部弹幕',
@@ -6004,18 +5774,8 @@ function PlayPageClient() {
       artPlayerRef.current.on('video:ended', () => {
         const idx = currentEpisodeIndexRef.current;
 
-        // 🔥 关键修复：首先检查这个 video:ended 事件是否已经被处理过
+        // 检查这个 video:ended 事件是否已经被处理过
         if (videoEndedHandledRef.current) {
-          return;
-        }
-
-        // 🔑 检查是否已经通过 SkipController 触发了下一集，避免重复触发
-        if (isSkipControllerTriggeredRef.current) {
-          videoEndedHandledRef.current = true;
-          // 🔥 关键修复：延迟重置标志，等待新集数开始加载
-          setTimeout(() => {
-            isSkipControllerTriggeredRef.current = false;
-          }, 2000);
           return;
         }
 
@@ -6034,7 +5794,7 @@ function PlayPageClient() {
         const duration = artPlayerRef.current.duration || 0;
         const now = performance.now(); // 使用performance.now()更精确
 
-        // 更新 SkipController 所需的时间信息
+        // 更新当前播放时间信息
         setCurrentPlayTime(currentTime);
         setVideoDuration(duration);
 
@@ -6102,7 +5862,7 @@ function PlayPageClient() {
     };
 
     loadAndInit();
-  }, [Hls, videoUrl, loading, blockAdEnabled]);
+  }, [Hls, videoUrl, loading]);
 
   // 动态更新音轨控制按钮
   useEffect(() => {
@@ -6335,31 +6095,6 @@ function PlayPageClient() {
                       ↔
                     </div>
                   </div>
-                )}
-
-                {/* 跳过设置按钮 - 播放器内右上角 */}
-                {currentSource && currentId && (
-                  <div className='absolute top-4 right-4 z-10'>
-                    <SkipSettingsButton onClick={() => setIsSkipSettingOpen(true)} />
-                  </div>
-                )}
-
-                {/* SkipController 组件 */}
-                {currentSource && currentId && detail?.title && (
-                  <SkipController
-                    source={currentSource}
-                    id={currentId}
-                    title={detail.title}
-                    doubanId={videoDoubanId}
-                    year={videoYear}
-                    episodeIndex={currentEpisodeIndex}
-                    artPlayerRef={artPlayerRef}
-                    currentTime={currentPlayTime}
-                    duration={videoDuration}
-                    isSettingMode={isSkipSettingOpen}
-                    onSettingModeChange={setIsSkipSettingOpen}
-                    onNextEpisode={handleNextEpisode}
-                  />
                 )}
 
                 {/* 换源加载蒙层 */}

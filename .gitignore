@@ -45,6 +45,7 @@ src/lib/runtime.ts
 public/manifest.json
 
 # local dev files
+.dsh/
 AGENT.md
 TVBOX_DEV.md
 docker-compose.yml
