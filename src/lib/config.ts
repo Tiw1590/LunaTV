@@ -385,9 +385,10 @@ export async function configSelfCheck(adminConfig: AdminConfig): Promise<AdminCo
       // 查找现有配置中是否有这个用户
       const existingUserConfig = adminConfig.UserConfig.Users.find(u => u.username === username);
 
+      let userObj: any;
       if (existingUserConfig) {
         // 保留现有配置
-        return existingUserConfig;
+        userObj = { ...existingUserConfig };
       } else {
         // 新用户，创建默认配置
         let createdAt = Date.now();
@@ -434,8 +435,20 @@ export async function configSelfCheck(adminConfig: AdminConfig): Promise<AdminCo
           newUserConfig.enabledApis = enabledApis;
         }
 
-        return newUserConfig;
+        userObj = newUserConfig;
       }
+
+      // 获取用户最后登录时间
+      try {
+        const stat = await db.getUserPlayStat(username);
+        if (stat?.lastLoginTime || stat?.lastLoginDate) {
+          userObj.lastLoginTime = stat.lastLoginTime || stat.lastLoginDate;
+        }
+      } catch {
+        // ignore
+      }
+
+      return userObj;
     }));
 
     // 更新用户列表

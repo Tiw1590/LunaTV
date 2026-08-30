@@ -336,7 +336,7 @@ export abstract class BaseRedisStorage implements IStorage {
   }
 
   async registerUser(userName: string, password: string): Promise<void> {
-    const hashed = hashPwd(password);
+    const hashed = isHashed(password) ? password : hashPwd(password);
     await this.withRetry(() => this.client.set(this.userPwdKey(userName), hashed));
   }
 
@@ -422,6 +422,9 @@ export abstract class BaseRedisStorage implements IStorage {
 
   // SHA256加密密码
   private async hashPassword(password: string): Promise<string> {
+    if (/^[0-9a-f]{64}$/i.test(password)) {
+      return password;
+    }
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);

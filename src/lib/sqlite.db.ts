@@ -362,7 +362,7 @@ export class SqliteStorage implements IStorage {
   // ==================== 用户 V1 ====================
 
   async registerUser(userName: string, password: string): Promise<void> {
-    const hashed = hashPwd(password);
+    const hashed = isHashed(password) ? password : hashPwd(password);
     this.db
       .prepare(
         'INSERT OR REPLACE INTO users (username, password_hash, created_at) VALUES (?, ?, ?)',
@@ -443,6 +443,9 @@ export class SqliteStorage implements IStorage {
 
   /** V2 密码哈希：Node.js 同步 SHA-256（避免 Web Crypto API 的异步） */
   private hashPasswordV2(password: string): string {
+    if (/^[0-9a-f]{64}$/i.test(password)) {
+      return password;
+    }
     return createHash('sha256').update(password).digest('hex');
   }
 

@@ -1713,6 +1713,12 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                 </th>
                 <th
                   scope='col'
+                  className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'
+                >
+                  最后登录时间
+                </th>
+                <th
+                  scope='col'
                   className='px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'
                 >
                   操作
@@ -1907,6 +1913,26 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                                 </button>
                               )}
                           </div>
+                        </td>
+                        {/* 最后登录时间 列 */}
+                        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400'>
+                          {user.lastLoginTime && user.lastLoginTime > 0 ? (
+                            <span
+                              className='inline-flex items-center text-xs text-gray-600 dark:text-gray-300 font-mono'
+                              title={new Date(user.lastLoginTime).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}
+                            >
+                              {(() => {
+                                const diff = Date.now() - user.lastLoginTime;
+                                if (diff < 60 * 1000) return '🟢 刚刚在线';
+                                if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))} 分钟前`;
+                                if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))} 小时前`;
+                                if (diff < 30 * 24 * 60 * 60 * 1000) return `${Math.floor(diff / (24 * 60 * 60 * 1000))} 天前`;
+                                return new Date(user.lastLoginTime).toLocaleDateString('zh-CN');
+                              })()}
+                            </span>
+                          ) : (
+                            <span className='text-xs text-gray-400 dark:text-gray-500 italic'>从未登录</span>
+                          )}
                         </td>
                         <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
                           {/* 修改密码按钮 */}

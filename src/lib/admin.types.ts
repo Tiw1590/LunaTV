@@ -43,6 +43,7 @@ export interface AdminConfig {
       enabledApis?: string[]; // 优先级高于tags限制（网站内搜索用）
       tags?: string[]; // 多 tags 取并集限制
       createdAt?: number; // 用户注册时间戳
+      lastLoginTime?: number; // 最后登录时间戳
       tvboxToken?: string; // 用户专属的 TVBox Token
       tvboxEnabledSources?: string[]; // TVBox 可访问的源（为空则返回所有源）
       showAdultContent?: boolean; // 用户级别的成人内容显示控制
